@@ -209,13 +209,13 @@ gboolean key_pressed(GtkWidget *widget, GVariant *variant, gpointer user_data) {
 					omni->offsets[MAX(0, i - 1)].y -= stepsize;
 					break;
 				case 'j':
-					omni->offsets[MAX(0, i - 1)].x -= stepsize;
+					omni->offsets[MAX(0, i - 1)].x += stepsize;
 					break;
 				case 'k':
 					omni->offsets[MAX(0, i - 1)].y += stepsize;
 					break;
 				case 'l':
-					omni->offsets[MAX(0, i - 1)].x += stepsize;
+					omni->offsets[MAX(0, i - 1)].x -= stepsize;
 					break;
 			}
 			
