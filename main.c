@@ -52,13 +52,13 @@ void regenerate_coords(Omni *omni) {
 		if (i >= omni->n_imgs - 1) break;
 		bool fold = omni->folds[i];
 		if (fold) {
-			c.x -= omni->offsets[i].x;
-			c.y += omni->offsets[i].y - omni->height;
+			c.x -= omni->width;
 			direction *= -1;
 		} else {
-			c.x -= omni->offsets[i].x - omni->width;
-			c.y += direction * omni->offsets[i].y;
+			c.y += direction * omni->height;
 		}
+		c.x += omni->offsets[i].x;
+		c.y += omni->offsets[i].y;
 	}
 }
 
@@ -209,13 +209,13 @@ gboolean key_pressed(GtkWidget *widget, GVariant *variant, gpointer user_data) {
 					omni->offsets[MAX(0, i - 1)].y -= stepsize;
 					break;
 				case 'j':
-					omni->offsets[MAX(0, i - 1)].x += stepsize;
+					omni->offsets[MAX(0, i - 1)].x -= stepsize;
 					break;
 				case 'k':
 					omni->offsets[MAX(0, i - 1)].y += stepsize;
 					break;
 				case 'l':
-					omni->offsets[MAX(0, i - 1)].x -= stepsize;
+					omni->offsets[MAX(0, i - 1)].x += stepsize;
 					break;
 			}
 			
@@ -384,15 +384,15 @@ int main(int argc, char *argv[]) {
 	
 	Coord *coords = malloc(sizeof(Coord) * nfiles);
 	assert(coords != NULL);
-	for (int i = 0; i < nfiles; ++i) coords[i] = (Coord){0, i * height};
 	
 	bool *folds = calloc(nfiles - 1, sizeof(bool));
 	assert(folds != NULL);
-	Coord *offsets = malloc(sizeof(Coord) * (nfiles - 1));
+	
+	Coord *offsets = calloc(nfiles - 1, sizeof(Coord));
 	assert(offsets != NULL);
-	for (int i = 0; i < nfiles - 1; ++i) offsets[i] = (Coord){width, height};
 	
 	Omni omni = (Omni){mainloop, win, pic, imgs, coords, nfiles, (Coord){-xpad,-ypad}, view, viewport_width, width, viewport_height, height, {0,0}, {0,0}, folds, offsets};
+	regenerate_coords(&omni);
 	regenerate_bounding_box(&omni);
 	
 	populate_view(&omni, false);
