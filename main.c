@@ -144,6 +144,11 @@ gboolean key_pressed(GtkWidget *widget, GVariant *variant, gpointer user_data) {
 	Omni *omni = (Omni*)sc->data;
 	char *keycombo = sc->keycombo;
 	
+	if (strcmp(keycombo, PRIMARY_STRING "q") == 0) {
+		g_main_loop_quit(omni->mainloop);
+		return TRUE;
+	}
+	
 	char key = '\0';
 	
 	int stepsize = 1;
@@ -171,11 +176,6 @@ gboolean key_pressed(GtkWidget *widget, GVariant *variant, gpointer user_data) {
 	if (strcmp(keycombo, "z") == 0) key = 'z';
 	
 	if (strcmp(keycombo, "p") == 0) key = 'p';
-	
-	if (strcmp(keycombo, "q") == 0) {
-		g_main_loop_quit(omni->mainloop);
-		return TRUE;
-	}
 	
 	if (key == '\0') return TRUE;
 	
@@ -432,7 +432,7 @@ int main(int argc, char *argv[]) {
 	
 	register_shortcut(controller, "p", &omni); // print
 	
-	register_shortcut(controller, "q", &omni); // quit
+	register_shortcut(controller, PRIMARY_STRING "q", &omni); // quit
 	gtk_widget_add_controller(win, controller);
 	
 	g_signal_connect_swapped(win, "close-request", (GCallback)g_main_loop_quit, mainloop);
