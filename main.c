@@ -38,6 +38,7 @@ typedef struct omni {
 	int xbounds[2], ybounds[2];
 	bool *folds;
 	Coord *offsets;
+	GdkPixbuf *copy;
 } Omni;
 
 int filter_only_files(const struct dirent *a) {
@@ -120,7 +121,11 @@ void populate_view(Omni *omni, bool zoomed_out) {
 		}
 	}
 	
-	gtk_picture_set_pixbuf(GTK_PICTURE(omni->pic), gdk_pixbuf_copy(omni->view));
+	GdkPixbuf *copy = gdk_pixbuf_copy(omni->view);
+	gtk_picture_set_pixbuf(GTK_PICTURE(omni->pic), copy);
+	
+	if (omni->copy != NULL) g_object_unref(omni->copy);
+	omni->copy = copy;
 }
 
 int viewport_index(Omni *omni) {
@@ -251,6 +256,7 @@ gboolean key_pressed(GtkWidget *widget, GVariant *variant, gpointer user_data) {
 			fakeomni.view = gdk_pixbuf_new_from_data(view_data, gdk_pixbuf_get_colorspace(fakeomni.imgs[0]), FALSE, bps, fakeomni.viewport_width, fakeomni.viewport_height, fakeomni.viewport_width * bpp / 8, NULL, NULL);
 			
 			populate_view(&fakeomni, false);
+			omni->copy = fakeomni.copy;
 			
 			char fname[50];
 			time_t t = time(NULL);
@@ -261,7 +267,7 @@ gboolean key_pressed(GtkWidget *widget, GVariant *variant, gpointer user_data) {
 			if (err == NULL) {
 				printf("Successfully saved image to file '%s'.\n", fname);
 			} else {
-				printf("Couldn't save file: %s\n", err->message);
+				eprintf("Couldn't save file: %s\n", err->message);
 			}
 			
 			g_object_unref(fakeomni.view);
@@ -391,7 +397,7 @@ int main(int argc, char *argv[]) {
 	Coord *offsets = calloc(nfiles - 1, sizeof(Coord));
 	assert(offsets != NULL);
 	
-	Omni omni = (Omni){mainloop, win, pic, imgs, coords, nfiles, (Coord){-xpad,-ypad}, view, viewport_width, width, viewport_height, height, {0,0}, {0,0}, folds, offsets};
+	Omni omni = (Omni){mainloop, win, pic, imgs, coords, nfiles, (Coord){-xpad,-ypad}, view, viewport_width, width, viewport_height, height, {0,0}, {0,0}, folds, offsets, NULL};
 	regenerate_coords(&omni);
 	regenerate_bounding_box(&omni);
 	
