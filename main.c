@@ -39,6 +39,7 @@ typedef struct omni {
 	bool *folds;
 	Coord *offsets;
 	GdkPixbuf *copy;
+	time_t last_coord_dump;
 } Omni;
 
 int filter_only_files(const struct dirent *a) {
@@ -77,6 +78,35 @@ void regenerate_bounding_box(Omni *omni) {
 	
 	memcpy(omni->xbounds, xbounds, sizeof(xbounds));
 	memcpy(omni->ybounds, ybounds, sizeof(ybounds));
+}
+
+void dump_coords(Omni *omni) {
+	char fname[50];
+	time_t t = time(NULL);
+	strftime(fname, sizeof(fname), "mosaic_%F_%H-%M-%S.coords", localtime(&t));
+	
+	FILE *f = fopen(fname, "wb");
+	if (f != NULL) {
+		fprintf(f, "%li\n", omni->n_imgs);
+		
+		for (int i = 0; i < omni->n_imgs - 2; ++i) {
+			fprintf(f, "%i,", omni->folds[i]);
+		}
+		fprintf(f, "%i\n", omni->folds[omni->n_imgs - 2]);
+		
+		for (int i = 0; i < omni->n_imgs - 2; ++i) {
+			fprintf(f, "%i,%i,", omni->offsets[i].x, omni->offsets[i].y);
+		}
+		fprintf(f, "%i,%i\n", omni->offsets[omni->n_imgs - 2].x, omni->offsets[omni->n_imgs - 2].y);
+		
+		fclose(f);
+		
+		printf("Successfully dumped coords to file '%s'.\n", fname);
+		
+		omni->last_coord_dump = t;
+	} else {
+		eprintf("error opening file '%s' to dump coords to.\n", fname);
+	}
 }
 
 void populate_view(Omni *omni, bool zoomed_out) {
@@ -175,6 +205,7 @@ gboolean key_pressed(GtkWidget *widget, GVariant *variant, gpointer user_data) {
 	
 	if (strcmp(keycombo, "z") == 0) key = 'z';
 	
+	if (strcmp(keycombo, "o") == 0) key = 'o';
 	if (strcmp(keycombo, "p") == 0) key = 'p';
 	
 	if (key == '\0') return TRUE;
@@ -182,6 +213,9 @@ gboolean key_pressed(GtkWidget *widget, GVariant *variant, gpointer user_data) {
 	const int VIEWSTEP = 100;
 	
 	bool zoomed_out = false;
+	
+	const long AUTOSAVE_INTERVAL = 300; // 5 mins
+	if (key != 'o' && key != 'p' && time(NULL) - omni->last_coord_dump > AUTOSAVE_INTERVAL) dump_coords(omni);
 	
 	switch (key) {
 		case 'w':
@@ -232,7 +266,12 @@ gboolean key_pressed(GtkWidget *widget, GVariant *variant, gpointer user_data) {
 		case 'z':
 			zoomed_out = true;
 			break;
+		case 'o':
+			dump_coords(omni);
+			break;
 		case 'p': {
+			dump_coords(omni);
+			
 			int xbounds[2] = {INT_MAX, INT_MIN};
 			int ybounds[2] = {INT_MAX, INT_MIN};
 			
@@ -397,7 +436,7 @@ int main(int argc, char *argv[]) {
 	Coord *offsets = calloc(nfiles - 1, sizeof(Coord));
 	assert(offsets != NULL);
 	
-	Omni omni = (Omni){mainloop, win, pic, imgs, coords, nfiles, (Coord){-xpad,-ypad}, view, viewport_width, width, viewport_height, height, {0,0}, {0,0}, folds, offsets, NULL};
+	Omni omni = (Omni){mainloop, win, pic, imgs, coords, nfiles, (Coord){-xpad,-ypad}, view, viewport_width, width, viewport_height, height, {0,0}, {0,0}, folds, offsets, NULL, time(NULL)};
 	regenerate_coords(&omni);
 	regenerate_bounding_box(&omni);
 	
@@ -430,6 +469,7 @@ int main(int argc, char *argv[]) {
 	
 	register_shortcut(controller, "z", &omni); // zoom
 	
+	register_shortcut(controller, "o", &omni); // dump coords
 	register_shortcut(controller, "p", &omni); // print
 	
 	register_shortcut(controller, PRIMARY_STRING "q", &omni); // quit
