@@ -219,16 +219,16 @@ gboolean key_pressed(GtkWidget *widget, GVariant *variant, gpointer user_data) {
 	
 	switch (key) {
 		case 'w':
-			omni->looking_at.y -= VIEWSTEP;
+			omni->looking_at.y -= VIEWSTEP / stepsize;
 			break;
 		case 'a':
-			omni->looking_at.x -= VIEWSTEP;
+			omni->looking_at.x -= VIEWSTEP / stepsize;
 			break;
 		case 's':
-			omni->looking_at.y += VIEWSTEP;
+			omni->looking_at.y += VIEWSTEP / stepsize;
 			break;
 		case 'd':
-			omni->looking_at.x += VIEWSTEP;
+			omni->looking_at.x += VIEWSTEP / stepsize;
 			break;
 		case 'i':
 		case 'j':
@@ -445,10 +445,21 @@ int main(int argc, char *argv[]) {
 	gtk_window_set_child(GTK_WINDOW(win), pic);
 	
 	GtkEventController *controller = gtk_shortcut_controller_new();
+	
 	register_shortcut(controller, "w", &omni); // move around view in chunks
 	register_shortcut(controller, "a", &omni);
 	register_shortcut(controller, "s", &omni);
 	register_shortcut(controller, "d", &omni);
+	
+	register_shortcut(controller, "<Shift>w", &omni);
+	register_shortcut(controller, "<Shift>a", &omni);
+	register_shortcut(controller, "<Shift>s", &omni);
+	register_shortcut(controller, "<Shift>d", &omni);
+	
+	register_shortcut(controller, PRIMARY_STRING "w", &omni);
+	register_shortcut(controller, PRIMARY_STRING "a", &omni);
+	register_shortcut(controller, PRIMARY_STRING "s", &omni);
+	register_shortcut(controller, PRIMARY_STRING "d", &omni);
 	
 	register_shortcut(controller, "i", &omni); // make pixel adjustments to img offsets
 	register_shortcut(controller, "j", &omni);
