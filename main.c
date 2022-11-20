@@ -385,11 +385,13 @@ int main(int argc, char *argv[]) {
 			status = stat(buf, &info);
 			if (status != 0) {
 				eprintf("An error occurred stat'ing the file '%s': %s [this file will be skipped]\n", buf, strerror(status));
+				free((void*)d);
 				free(buf);
 				continue;
 			}
 			if (!S_ISREG(info.st_mode)) {
 				free(buf);
+				free((void*)d);
 				continue; // if it's not a regular file, skip it
 			}
 		}
