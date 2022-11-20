@@ -343,12 +343,13 @@ int main(int argc, char *argv[]) {
 	
 	gtk_init();
 	
-	if (argc != 2) {
-		eprintf("Expected 1 argument (directory of files to load), got %i.\n", argc - 1);
+	if (argc != 2 && argc != 3) {
+		eprintf("Expected 1 argument (directory of files to load) or 2 arguments (directory of files to load, save file to restore layout from), got %i.\n", argc - 1);
 		return -1;
 	}
 	
-	const char *dir = argv[1];
+	const char * const dir = argv[1];
+	const char * const layout_file_path = argc > 2 ? argv[2] : NULL;
 	
 	printf("Loading files from directory '%s'\n", dir);
 	
@@ -437,6 +438,38 @@ int main(int argc, char *argv[]) {
 	
 	Coord *offsets = calloc(nfiles - 1, sizeof(Coord));
 	assert(offsets != NULL);
+	
+	if (layout_file_path != NULL) {
+		FILE *f = fopen(layout_file_path, "rb");
+		
+		if (f != NULL) {
+			printf("Using the layout file '%s'...\n", layout_file_path);
+			
+			int num_imgs_in_layout = -1;
+			fscanf(f, "%i\n", &num_imgs_in_layout);
+			
+			if (num_imgs_in_layout == nfiles) {
+				int j = 0;
+				for (int i = 0; i < num_imgs_in_layout - 2; ++i) {
+					fscanf(f, "%i,", &j);
+					folds[i] = j;
+				}
+				fscanf(f, "%i\n", &j);
+				folds[num_imgs_in_layout - 2] = j;
+				
+				for (int i = 0; i < num_imgs_in_layout - 2; ++i) {
+					fscanf(f, "%i,%i,", &offsets[i].x, &offsets[i].y);
+				}
+				fscanf(f, "%i,%i\n", &offsets[num_imgs_in_layout - 2].x, &offsets[num_imgs_in_layout - 2].y);
+			} else {
+				eprintf("This layout file does not contain the same number of files as were found in the directory given, so cannot be used. Are you sure you specified the right directory and file?\n");
+			}
+			
+			fclose(f);
+		} else {
+			eprintf("An error occurred opening the layout file so it is not being used.\n");
+		}
+	}
 	
 	Omni omni = (Omni){mainloop, win, pic, imgs, coords, nfiles, (Coord){-xpad,-ypad}, view, viewport_width, width, viewport_height, height, {0,0}, {0,0}, folds, offsets, NULL, time(NULL)};
 	regenerate_coords(&omni);
